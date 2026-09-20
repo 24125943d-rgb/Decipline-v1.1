@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/temporary_modifier.gd" id="1_temp"]
+
+[resource]
+script = ExtResource("1_temp")
+primary_key = 3
+name = "战意"
+description = "固定值正面修正：力量 +2、体质 +1，一直生效到局结束（局内永久）"
+kind = 1
+polarity = 0
+fixed_value = true
+strength = 2
+constitution = 1

@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://BlockSystem/Logic/StatementUI.gd" id="1_statement"]
+[ext_resource type="Theme" path="res://BlockSystem/Art/Themes/block_theme.tres" id="2_theme"]
+[ext_resource type="BlockPalette" path="res://BlockSystem/Art/Palettes/palette_default.tres" id="3_palette"]
+[ext_resource type="PackedScene" path="res://BlockSystem/Prefabs/SlotUI.tscn" id="4_slot"]
+
+[node name="IfBlockUI" type="VBoxContainer" node_paths=PackedStringArray("condition_slot", "body_container")]
+theme = ExtResource("2_theme")
+script = ExtResource("1_statement")
+palette = ExtResource("3_palette")
+condition_slot = NodePath("ConditionSlot")
+body_container = NodePath("BodyContainer")
+
+[node name="ConditionSlot" parent="." instance=ExtResource("4_slot")]
+layout_mode = 2
+role = &"condition"
+boolean_required = true
+
+[node name="BodyContainer" type="VBoxContainer" parent="."]
+layout_mode = 2

@@ -1,0 +1,24 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://BlockSystem/Logic/CommandUI.gd" id="1_command"]
+[ext_resource type="Theme" path="res://BlockSystem/Art/Themes/block_theme.tres" id="2_theme"]
+[ext_resource type="BlockPalette" path="res://BlockSystem/Art/Palettes/palette_default.tres" id="3_palette"]
+
+[node name="CommandBlockUI" type="PanelContainer" node_paths=PackedStringArray("opcode_label", "args_label")]
+theme = ExtResource("2_theme")
+theme_type_variation = &"CommandBlock"
+script = ExtResource("1_command")
+palette = ExtResource("3_palette")
+opcode_label = NodePath("Row/OpcodeLabel")
+args_label = NodePath("Row/ArgsLabel")
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="OpcodeLabel" type="Label" parent="Row"]
+layout_mode = 2
+text = "move_forward"
+
+[node name="ArgsLabel" type="Label" parent="Row"]
+layout_mode = 2
+text = "3"

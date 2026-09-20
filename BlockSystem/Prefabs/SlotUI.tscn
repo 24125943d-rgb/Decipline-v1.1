@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://BlockSystem/Logic/SlotUI.gd" id="1_slot"]
+[ext_resource type="Theme" path="res://BlockSystem/Art/Themes/block_theme.tres" id="2_theme"]
+
+[node name="SlotUI" type="PanelContainer" node_paths=PackedStringArray("hint_label")]
+theme = ExtResource("2_theme")
+theme_type_variation = &"SlotPlaceholder"
+script = ExtResource("1_slot")
+role = &"left"
+hint_label = NodePath("Hint")
+
+[node name="Hint" type="Label" parent="."]
+layout_mode = 2
+text = "拖入积木"
+horizontal_alignment = 1

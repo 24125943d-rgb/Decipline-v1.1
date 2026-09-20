@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/character.gd" id="1_character"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_placeholder"]
+radius = 0.5
+height = 1.0
+radial_segments = 32
+rings = 16
+
+[sub_resource type="SphereShape3D" id="SphereShape_hurtbox"]
+radius = 0.5
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_body"]
+radius = 0.4
+height = 1.8
+
+[node name="Character" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_character")
+
+[node name="Appearance" type="Node3D" parent="."]
+
+[node name="ModelRoot" type="Node3D" parent="Appearance"]
+
+[node name="PlaceholderSphere" type="MeshInstance3D" parent="Appearance/ModelRoot"]
+mesh = SubResource("SphereMesh_placeholder")
+
+[node name="Hurtbox" type="Area3D" parent="."]
+collision_layer = 2
+collision_mask = 4
+monitorable = true
+
+[node name="Shape" type="CollisionShape3D" parent="Hurtbox"]
+shape = SubResource("SphereShape_hurtbox")
+
+[node name="BodyCollision" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape_body")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

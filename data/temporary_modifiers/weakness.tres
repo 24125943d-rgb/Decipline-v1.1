@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/temporary_modifier.gd" id="1_temp"]
+[ext_resource type="Script" path="res://scripts/modifiers/expires_after_seconds.gd" id="2_seconds"]
+
+[sub_resource type="Resource" id="Resource_expiry"]
+script = ExtResource("2_seconds")
+seconds = 8.0
+
+[resource]
+script = ExtResource("1_temp")
+primary_key = 1
+name = "虚弱"
+description = "固定值负面修正：总是扣 3 点力量；局内临时，8 秒后由结束判定脚本消除"
+kind = 0
+polarity = 1
+fixed_value = true
+strength = -3
+expiry = SubResource("Resource_expiry")

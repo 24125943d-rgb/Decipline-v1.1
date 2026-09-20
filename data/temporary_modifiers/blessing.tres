@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/temporary_modifier.gd" id="1_temp"]
+[ext_resource type="Script" path="res://scripts/modifiers/expires_when_downed.gd" id="2_downed"]
+
+[sub_resource type="Resource" id="Resource_expiry"]
+script = ExtResource("2_downed")
+
+[resource]
+script = ExtResource("1_temp")
+primary_key = 5
+name = "祝福"
+description = "固定值正面修正：感知 +1、魅力 +2；局外临时，判定脚本在角色倒地时消除"
+kind = 2
+polarity = 0
+fixed_value = true
+wisdom = 1
+charisma = 2
+expiry = SubResource("Resource_expiry")

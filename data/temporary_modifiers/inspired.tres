@@ -1,0 +1,20 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/temporary_modifier.gd" id="1_temp"]
+[ext_resource type="Script" path="res://scripts/modifiers/expires_after_steps.gd" id="2_steps"]
+
+[sub_resource type="Resource" id="Resource_expiry"]
+script = ExtResource("2_steps")
+steps = 3
+
+[resource]
+script = ExtResource("1_temp")
+primary_key = 4
+name = "鼓舞"
+description = "固定值正面修正：感知 +2、魅力 +1；局外临时，按回合 / 步数计时（3 步）"
+kind = 2
+polarity = 0
+fixed_value = true
+wisdom = 2
+charisma = 1
+expiry = SubResource("Resource_expiry")

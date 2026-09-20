@@ -1,0 +1,28 @@
+[gd_resource type="Theme" load_steps=8 format=3]
+
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_expression.tres" id="1_expression"]
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_expression_hovered.tres" id="2_hovered"]
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_expression_wrapped.tres" id="3_wrapped"]
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_command.tres" id="4_command"]
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_slot_placeholder.tres" id="5_slot_empty"]
+[ext_resource type="StyleBoxEmpty" path="res://BlockSystem/Art/Themes/block_stylebox_slot_filled.tres" id="6_slot_filled"]
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_slot_rejected.tres" id="7_slot_rejected"]
+
+[resource]
+ExpressionBlock/base_type = &"PanelContainer"
+ExpressionBlock/styles/panel = ExtResource("1_expression")
+ExpressionBlock_Hovered/base_type = &"PanelContainer"
+ExpressionBlock_Hovered/styles/panel = ExtResource("2_hovered")
+ExpressionBlock_Wrapped/base_type = &"PanelContainer"
+ExpressionBlock_Wrapped/styles/panel = ExtResource("3_wrapped")
+CommandBlock/base_type = &"PanelContainer"
+CommandBlock/styles/panel = ExtResource("4_command")
+SlotPlaceholder/base_type = &"PanelContainer"
+SlotPlaceholder/styles/panel = ExtResource("5_slot_empty")
+SlotFilled/base_type = &"PanelContainer"
+SlotFilled/styles/panel = ExtResource("6_slot_filled")
+SlotRejected/base_type = &"PanelContainer"
+SlotRejected/styles/panel = ExtResource("7_slot_rejected")
+StatementBlock_Hovered/base_type = &"VBoxContainer"
+StatementBlock_Hovered/constants/separation = 12
+BlockDrag/colors/preview_modulate = Color(1, 1, 1, 0.6)
