@@ -1,5 +1,6 @@
 class_name BlockDragDrop
 extends RefCounted
+const UIType: GDScript = preload("res://BlockSystem/Logic/BlockUIType.gd")
 ## 拖放交互的通用计算与动作（Logic 层，纯逻辑，不生成任何 UI 结构）。
 ##
 ## 三个回调（_get_drag_data / _can_drop_data / _drop_data）必须写在具体预制体的脚本上 ——
@@ -63,7 +64,57 @@ static func can_drop_into(source: Control, target: Control) -> bool:
 		return false
 	if source == target:
 		return false
-	return not source.is_ancestor_of(target)
+	if source.is_ancestor_of(target):
+		return false
+	return _kind_fits(source, target)
+
+
+## 语法闸门：这一拖有没有「立足之地」。
+## 判据是「会落进哪个容器」——只看落点是什么控件不够，因为落在某一行积木上时，
+## 插入动作是由那个积木把载荷当作兄弟节点放进它所在的容器里的。
+## 注意：这里只回答「能不能」，拒绝的视觉反馈由各控件自己给（见 SlotUI._can_drop_data），
+## 两件事必须分开 —— 否则一旦拒收就连高亮都没了。
+static func _kind_fits(source: Control, target: Control) -> bool:
+	var model: AST_Node = _model_of(source)
+	if model == null:
+		return true
+	var kind: StringName = AST_BlockSchema.kind_of(model)
+	var is_expression: bool = kind == AST_BlockSchema.KIND_EXPRESSION
+
+	if UIType.matches(target, UIType.SLOT):
+		return true  # 插槽的容量与种类由 SlotUI 自己管
+	if UIType.matches(target, UIType.STATEMENT):
+		return not is_expression  # 语句体只收指令与语句：表达式在语法上不是「一行」
+	if UIType.matches(target, UIType.EXPRESSION):
+		return is_expression  # Actual wrap/capacity checks belong to ExpressionUI.
+	if UIType.matches(target, UIType.COMMAND):
+		return not is_expression  # Command forwards to its enclosing statement, not args.
+
+	var owner: Node = _owning_block(target)
+	if UIType.matches(owner, UIType.STATEMENT):
+		return not is_expression
+	if UIType.matches(owner, UIType.COMMAND):
+		return is_expression
+	if UIType.matches(owner, UIType.EXPRESSION):
+		return false
+	return true
+
+
+## 从落点往上找「掌管这个容器的积木」。容器自己算不上属主，所以从父节点起找。
+static func _owning_block(node: Node) -> Node:
+	var walker: Node = node.get_parent() if node != null else null
+	while walker != null:
+		if UIType.matches(walker, UIType.STATEMENT) or UIType.matches(walker, UIType.COMMAND) or UIType.matches(walker, UIType.EXPRESSION):
+			return walker
+		walker = walker.get_parent()
+	return null
+
+
+## 取控件对应的模型（UI 协议里的 get_model）。
+static func _model_of(control: Control) -> AST_Node:
+	if control != null and control.has_method(&"get_model"):
+		return control.call(&"get_model") as AST_Node
+	return null
 
 
 # ------------------------------------------------------------------ 拖拽快照
@@ -90,14 +141,57 @@ static func begin_drag(source: Control) -> Control:
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview.modulate = resolve_preview_modulate(source)
 	source.set_drag_preview(preview)
-	source.hide()
+	reserve_drag_origin(source)
 	return preview
 
 
 ## 拖拽结束（成功落点或中途取消）时恢复源节点。幂等。
 static func end_drag(source: Control) -> void:
-	if source != null and is_instance_valid(source):
-		source.show()
+	if source == null or not is_instance_valid(source):
+		return
+	var placeholder: Node = source.get_meta(&"drag_placeholder", null) as Node
+	if is_instance_valid(placeholder) and placeholder.get_parent() != null:
+		placeholder.get_parent().remove_child(placeholder)
+		placeholder.queue_free()
+	commit_drag(source)
+
+
+## Reserve the exact parameter position while retaining the source for cancellation.
+static func reserve_drag_origin(source: Control) -> void:
+	source.set_meta(&"drag_active", true)
+	source.hide()
+	var parent: Node = source.get_parent()
+	if UIType.matches(parent, UIType.SLOT):
+		parent.call(&"_refresh_look")
+		return
+	var owner: Node = _owning_block(source)
+	var role: StringName = &""
+	if UIType.matches(owner, UIType.EXPRESSION):
+		role = StringName(owner.call(&"role_of_slot", parent))
+	elif UIType.matches(owner, UIType.COMMAND) and parent == (owner.get(&"args_container") as Node):
+		role = AST_BlockSchema.ROLE_ARG
+	if role.is_empty():
+		return
+	var slot_script: GDScript = load(UIType.SLOT) as GDScript
+	var placeholder: Control = slot_script.call(&"create", role) as Control
+	parent.add_child(placeholder)
+	parent.move_child(placeholder, source.get_index())
+	source.set_meta(&"drag_placeholder", placeholder)
+
+
+static func is_drag_source(node: Node) -> bool:
+	return bool(node.get_meta(&"drag_active", false))
+
+
+## Successful move keeps the reserved hole. The destination consumes it on a return drop.
+static func commit_drag(source: Control) -> void:
+	if source == null or not is_instance_valid(source):
+		return
+	source.remove_meta(&"drag_active")
+	source.remove_meta(&"drag_placeholder")
+	source.show()
+	if UIType.matches(source.get_parent(), UIType.SLOT):
+		source.get_parent().call(&"_refresh_look")
 
 
 ## 快照透明度：从主题项读取；条目缺席时退化为 Color.WHITE（不写死颜色字面量）。

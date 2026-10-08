@@ -86,7 +86,7 @@ var _elapsed: float = 0.0
 func _ready() -> void:
 	_vision = _resolve_vision()
 	if _vision == null:
-		push_warning("VisionAreaRenderer: 找不到 CharacterVision，视野区域可视化不会生成。")
+		push_warning("VisionAreaRenderer: no CharacterVision found; the vision area visual will not be generated.")
 		enabled = false
 		return
 	_build_nodes()
@@ -317,65 +317,18 @@ func _update_decal() -> void:
 
 
 func _rasterize_mask(box: float) -> Image:
-	var size: int = clampi(decal_mask_size, 32, 512)
-	var data: PackedByteArray = PackedByteArray()
-	data.resize(size * size * 4)  # 全 0 = 透明
-	if _points.size() < 3:
-		return Image.create_from_data(size, size, false, Image.FORMAT_RGBA8, data)
+	# 扫描线填充 / 羽化 / 径向渐隐的实现在 RangeMaskRasterizer（和攻击范围共用一份）。
+	return RangeMaskRasterizer.rasterize(
+		_points,
+		box,
+		decal_mask_size,
+		_vision.view_radius,
+		decal_edge_feather,
+		decal_radial_falloff,
+		decal_flip_x,
+		decal_flip_z
+	)
 
-	var half: float = box * 0.5
-	var to_pixel: float = float(size) / box
-	var signed_x: float = -1.0 if decal_flip_x else 1.0
-	var signed_y: float = -1.0 if decal_flip_z else 1.0
-
-	var polygon: PackedVector2Array = PackedVector2Array()
-	for point: Vector2 in _points:
-		polygon.append(Vector2((point.x * signed_x + half) * to_pixel, (point.y * signed_y + half) * to_pixel))
-	var apex: Vector2 = polygon[0]
-	var radius_px: float = maxf(_vision.view_radius * to_pixel, 0.001)
-	var feather: float = maxf(decal_edge_feather, 0.0)
-
-	for row in size:
-		var scan_y: float = float(row) + 0.5
-		var crossings: PackedFloat32Array = PackedFloat32Array()
-		for i in polygon.size():
-			var a: Vector2 = polygon[i]
-			var b: Vector2 = polygon[(i + 1) % polygon.size()]
-			if (a.y <= scan_y) == (b.y <= scan_y):
-				continue
-			crossings.append(a.x + (scan_y - a.y) / (b.y - a.y) * (b.x - a.x))
-		if crossings.size() < 2:
-			continue
-		crossings.sort()
-		var pair: int = 0
-		while pair + 1 < crossings.size():
-			var x_left: float = maxf(crossings[pair], 0.0)
-			var x_right: float = minf(crossings[pair + 1], float(size))
-			pair += 2
-			if x_right <= x_left:
-				continue
-			var start: int = int(floor(x_left))
-			var end: int = int(ceil(x_right))
-			for column in range(start, end):
-				if column < 0 or column >= size:
-					continue
-				var x_center: float = float(column) + 0.5
-				if x_center < x_left or x_center > x_right:
-					continue
-				var alpha: float = _edge_alpha(x_center, x_left, x_right, feather)
-				if decal_radial_falloff > 0.0:
-					var dx: float = x_center - apex.x
-					var dy: float = scan_y - apex.y
-					var normalized: float = clampf(sqrt(dx * dx + dy * dy) / radius_px, 0.0, 1.0)
-					alpha *= 1.0 - decal_radial_falloff * normalized * normalized
-				if alpha <= 0.003:
-					continue
-				var index: int = (row * size + column) * 4
-				data[index] = 255
-				data[index + 1] = 255
-				data[index + 2] = 255
-				data[index + 3] = int(clampf(alpha, 0.0, 1.0) * 255.0)
-	return Image.create_from_data(size, size, false, Image.FORMAT_RGBA8, data)
 
 # ------------------------------------------------------------------ 内部工具
 static func _edge_alpha(x: float, x_left: float, x_right: float, feather: float) -> float:

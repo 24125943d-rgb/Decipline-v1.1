@@ -46,6 +46,8 @@ static func from_dictionary(payload: Variant) -> AST_Node:
 			return _read_statement(data)
 		AST_Command.TYPE_COMMAND:
 			return _read_command(data)
+		AST_Variable.TYPE_VARIABLE:
+			return _read_variable(data)
 		AST_Expression.TYPE_EXPRESSION:
 			return _read_expression(data)
 		_:
@@ -63,6 +65,8 @@ static func serialize_ast_to_json(ast_root: AST_Node) -> String:
 
 static func _read_statement(data: Dictionary) -> AST_Statement:
 	var statement: AST_Statement = AST_Statement.new()
+	statement.uuid = String(data.get("uuid", ""))
+	statement.loop = bool(data.get("loop", false))
 
 	var raw_condition: Variant = data.get("condition", null)
 	if raw_condition != null:
@@ -86,11 +90,34 @@ static func _read_statement(data: Dictionary) -> AST_Statement:
 			body.append(child)
 		statement.body = body
 
+	var raw_else: Variant = data.get("else_body", [])
+	if raw_else != null:
+		if typeof(raw_else) != TYPE_ARRAY:
+			push_error("ASTManager: statement.else_body 必须是数组。")
+			return null
+		var else_entries: Array = raw_else
+		var else_body: Array[AST_Node] = []
+		for entry: Variant in else_entries:
+			var else_child: AST_Node = from_dictionary(entry)
+			if else_child == null:
+				push_error("ASTManager: statement.else_body 中存在无法解析的子节点。")
+				return null
+			else_body.append(else_child)
+		statement.else_body = else_body
+
 	return statement
+
+
+## 变量引用：{ "type": "variable", "name": "enemies_visible" }
+static func _read_variable(data: Dictionary) -> AST_Variable:
+	var variable: AST_Variable = AST_Variable.new(String(data.get("name", "")))
+	variable.uuid = String(data.get("uuid", ""))
+	return variable
 
 
 static func _read_command(data: Dictionary) -> AST_Command:
 	var command: AST_Command = AST_Command.new()
+	command.uuid = String(data.get("uuid", ""))
 	command.opcode = String(data.get("opcode", ""))
 
 	var raw_args: Variant = data.get("args", [])
@@ -99,7 +126,17 @@ static func _read_command(data: Dictionary) -> AST_Command:
 			push_error("ASTManager: command.args 必须是数组。")
 			return null
 		# 归一化并深拷贝：让 AST 与外部 JSON 解析结果不共享容器引用。
-		var args: Array = _normalize_value(raw_args)
+		# Dictionary 元素按节点解析（对象参数，例如「攻击哪个角色」），其余保持字面量。
+		var args: Array = []
+		for entry: Variant in (raw_args as Array):
+			if typeof(entry) == TYPE_DICTIONARY and (entry as Dictionary).has("type"):
+				var node: AST_Node = from_dictionary(entry)
+				if node == null:
+					push_error("ASTManager: command.args 中存在无法解析的节点参数。")
+					return null
+				args.append(node)
+			else:
+				args.append(_normalize_value(entry))
 		command.args = args
 
 	return command

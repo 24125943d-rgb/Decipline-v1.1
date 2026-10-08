@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=8 format=3]
+[gd_resource type="Theme" load_steps=10 format=3]
 
 [ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_expression.tres" id="1_expression"]
 [ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_expression_hovered.tres" id="2_hovered"]
@@ -7,6 +7,8 @@
 [ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_slot_placeholder.tres" id="5_slot_empty"]
 [ext_resource type="StyleBoxEmpty" path="res://BlockSystem/Art/Themes/block_stylebox_slot_filled.tres" id="6_slot_filled"]
 [ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_slot_rejected.tres" id="7_slot_rejected"]
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_statement.tres" id="9_statement"]
+[ext_resource type="StyleBoxFlat" path="res://BlockSystem/Art/Themes/block_stylebox_statement_loop.tres" id="10_statement_loop"]
 
 [resource]
 ExpressionBlock/base_type = &"PanelContainer"
@@ -23,6 +25,10 @@ SlotFilled/base_type = &"PanelContainer"
 SlotFilled/styles/panel = ExtResource("6_slot_filled")
 SlotRejected/base_type = &"PanelContainer"
 SlotRejected/styles/panel = ExtResource("7_slot_rejected")
+StatementBlock/base_type = &"PanelContainer"
+StatementBlock/styles/panel = ExtResource("9_statement")
+StatementBlock_Loop/base_type = &"PanelContainer"
+StatementBlock_Loop/styles/panel = ExtResource("10_statement_loop")
 StatementBlock_Hovered/base_type = &"VBoxContainer"
 StatementBlock_Hovered/constants/separation = 12
 BlockDrag/colors/preview_modulate = Color(1, 1, 1, 0.6)

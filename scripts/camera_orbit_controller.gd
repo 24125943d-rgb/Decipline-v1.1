@@ -165,7 +165,7 @@ func restore_initial() -> void:
 	_distance = _initial_distance
 	_apply()
 	if print_on_restore:
-		print("摄影机已还原初始机位：", get_state())
+		print("Camera restored to its initial view: ", get_state())
 
 
 ## 当前机位，方便脚本 / 调试读取：

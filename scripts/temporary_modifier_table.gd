@@ -35,25 +35,25 @@ static var _defaults_loaded: bool = false
 ## 把一个元素登记进表。[b]成功返回空字符串[/b]，失败返回原因（不写日志，调用方自己决定要不要记）。
 static func register(entry: TemporaryModifier) -> String:
 	if entry == null:
-		return "元素为空"
+		return "entry is null"
 	if entry.name.is_empty():
-		return "缺少候选键（名称）"
+		return "missing candidate key (name)"
 	if entry.primary_key < 0:
-		return "主键必须是 >= 0 的整数（当前 %d）" % entry.primary_key
+		return "primary key must be an integer >= 0 (currently %d)" % entry.primary_key
 	if not TemporaryModifier.is_allowed_kind(entry.kind):
-		return "'%s' 是局外永久改动（直接写变量本体），不属于临时修正表" % entry.name
+		return "'%s' is an out-of-run permanent change (it writes the base value directly) and does not belong in the temporary modifier table" % entry.name
 	if entry.is_temporary() and not entry.is_expiry_valid():
 		return (
-			"临时修正 '%s' 必须挂一个非空的结束判定脚本（继承 ModifierExpiry，不能是基类本身）"
+			"temporary modifier '%s' must have a non-empty expiry rule (a script extending ModifierExpiry, not the base class itself)"
 			% entry.name
 		)
 	if entry.kind == AttributeModifier.Kind.IN_RUN_PERMANENT and entry.expiry != null:
-		return "局内永久修正 '%s' 不该挂结束判定脚本（它一直生效到局结束）" % entry.name
+		return "in-run permanent modifier '%s' must not have an expiry rule (it lasts until the run ends)" % entry.name
 	var existing: TemporaryModifier = find_by_key(entry.primary_key)
 	if existing != null:
-		return "主键 %d 已被 '%s' 占用" % [entry.primary_key, existing.name]
+		return "primary key %d is already taken by '%s'" % [entry.primary_key, existing.name]
 	if _by_name.has(entry.name):
-		return "候选键 '%s' 已被占用" % entry.name
+		return "candidate key '%s' is already taken" % entry.name
 	_by_key[entry.primary_key] = entry
 	_by_name[entry.name] = entry
 	return ""
@@ -158,7 +158,7 @@ static func instantiate(key_or_name: Variant, parameters: Dictionary = {}) -> At
 	ensure_loaded()
 	var entry: TemporaryModifier = find(key_or_name)
 	if entry == null:
-		push_error("临时修正表：找不到 %s，无法实例化。" % str(key_or_name))
+		push_error("TemporaryModifierTable: %s not found; cannot instantiate." % str(key_or_name))
 		return null
 	return entry.instantiate(parameters)
 
@@ -168,7 +168,7 @@ static func instantiate_for(
 	character: AttributeCharacter, key_or_name: Variant, parameters: Dictionary = {}
 ) -> AttributeModifier:
 	if character == null:
-		push_error("临时修正表：instantiate_for 需要一个 AttributeCharacter。")
+		push_error("TemporaryModifierTable: instantiate_for requires an AttributeCharacter.")
 		return null
 	var modifier: AttributeModifier = instantiate(key_or_name, parameters)
 	if modifier == null:
@@ -191,13 +191,13 @@ static func load_directory(path: String = DEFAULT_DIRECTORY) -> int:
 		var resource: Resource = load(full_path)
 		var entry: TemporaryModifier = resource as TemporaryModifier
 		if entry == null:
-			push_warning("临时修正表：%s 不是 TemporaryModifier，已跳过。" % full_path)
+			push_warning("TemporaryModifierTable: %s is not a TemporaryModifier; skipped." % full_path)
 			continue
 		var error: String = register(entry)
 		if error.is_empty():
 			registered += 1
 		else:
-			push_warning("临时修正表：%s 登记失败 —— %s" % [full_path, error])
+			push_warning("TemporaryModifierTable: failed to register %s: %s" % [full_path, error])
 	return registered
 
 

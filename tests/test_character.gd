@@ -34,7 +34,10 @@ func test_defaults() -> Variant:
 	_check(c.is_in_group(Character.GROUP_CHARACTER), "加入 character 组")
 	_check_eq(c.get_state_name(), "NORMAL", "状态名")
 	var placeholder: MeshInstance3D = c.get_node_or_null(^"Appearance/ModelRoot/PlaceholderSphere")
-	_check(placeholder != null and placeholder.visible, "默认显示占位球体")
+	_check(placeholder != null, "占位球体节点保留（模型缺失时的兜底外观）")
+	_check(c.model_instance != null, "默认挂上了外观模型")
+	if placeholder != null:
+		_check(not placeholder.visible, "有默认模型时占位球体隐藏")
 	c.free()
 	return _verdict("test_defaults")
 
@@ -156,15 +159,18 @@ func test_hurtbox_is_centered_and_replaceable() -> Variant:
 	_check_eq(c.hurtbox.collision_mask, Character.LAYER_HITBOX, "扫描攻击层")
 	_check(c.hurtbox.monitorable, "可被攻击判定检测到")
 
-	# 占位球体半径 0.5、位于原点 → 受击判定中心应落在角色原点
-	var offset: Vector3 = c.hurtbox.global_position - c.global_position
-	_check(offset.length() < 0.001, "受击判定位于外观中心（偏移 %s）" % offset)
+	# 受击判定中心应落在“当前外观包围盒”的中心（默认模型脚底在原点下方，所以中心不是原点）
+	var box: AABB = _appearance_aabb(c)
+	var expected: Vector3 = c.global_transform * box.get_center()
+	var offset: Vector3 = c.hurtbox.global_position - expected
+	_check(offset.length() < 0.002, "受击判定位于外观中心（偏移 %s）" % offset)
 
-	# 外观整体抬高后，重新居中应该跟过去
+	# 外观整体抬高后，重新居中应该跟过去（抬高量叠加在模型自身中心之上）
 	c.appearance.position = Vector3(0, 1.5, 0)
 	c.recenter_hurtbox()
 	var moved: float = snappedf(c.hurtbox.global_position.y - c.global_position.y, 0.001)
-	_check_eq(moved, 1.5, "外观偏移后重新居中")
+	var expected_moved: float = box.get_center().y + 1.5
+	_check(absf(moved - expected_moved) < 0.002, "外观偏移后重新居中（期望 %.3f，实际 %.3f）" % [expected_moved, moved])
 
 	# 形状可以随便换（可替换性）
 	c.hurtbox_shape.shape = CapsuleShape3D.new()
@@ -223,7 +229,12 @@ func test_hit_filters_and_invulnerability() -> Variant:
 func test_appearance_model_swap_and_animation() -> Variant:
 	var c: Character = _spawn()
 	var placeholder: MeshInstance3D = c.get_node_or_null(^"Appearance/ModelRoot/PlaceholderSphere")
-	_check(placeholder != null and placeholder.visible, "替换前显示占位球体")
+	_check(placeholder != null, "占位球体节点还在")
+	# 先摘掉默认模型：占位球体应当作为兜底外观重新出现
+	c.set_appearance_model(null)
+	_check(c.model_instance == null, "摘掉模型后没有模型实例")
+	if placeholder != null:
+		_check(placeholder.visible, "没有模型时显示占位球体")
 
 	var fake_model: PackedScene = _make_fake_model()
 	_check(fake_model.can_instantiate(), "假模型打包成功")
@@ -285,6 +296,24 @@ func _spawn() -> Character:
 	var character: Character = CharacterScene.instantiate() as Character
 	add_child(character)
 	return character
+
+
+## 外观（含所有可见子网格）在 ModelRoot 局部空间里的包围盒。与 Character._visual_aabb 同口径。
+func _appearance_aabb(c: Character) -> AABB:
+	var result: AABB = AABB()
+	var source: Node3D = c.get_node_or_null(^"Appearance/ModelRoot") as Node3D
+	if source == null:
+		return result
+	var found: bool = false
+	var to_source: Transform3D = source.global_transform.affine_inverse()
+	for node: Node in source.find_children("*", "VisualInstance3D", true, false):
+		var visual: VisualInstance3D = node as VisualInstance3D
+		if visual == null or not visual.is_visible_in_tree():
+			continue
+		var local_box: AABB = (to_source * visual.global_transform) * visual.get_aabb()
+		result = local_box if not found else result.merge(local_box)
+		found = true
+	return result
 
 
 func _make_fake_model() -> PackedScene:

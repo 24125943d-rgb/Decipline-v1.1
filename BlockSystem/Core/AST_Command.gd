@@ -23,11 +23,16 @@ func _init(p_opcode: String = "") -> void:
 
 
 func to_dictionary() -> Dictionary:
-	return {
-		"type": type,
-		"opcode": opcode,
-		"args": args,
-	}
+	var payload: Dictionary = _payload()
+	payload["opcode"] = opcode
+	var args_payload: Array = []
+	for entry: Variant in args:
+		if entry is AST_Node:
+			args_payload.append((entry as AST_Node).to_dictionary())
+		else:
+			args_payload.append(entry)
+	payload["args"] = args_payload
+	return payload
 
 
 func _to_string() -> String:

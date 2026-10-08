@@ -18,6 +18,22 @@ extends VBoxContainer
 ## 语句体挂载点。
 @export var body_container: VBoxContainer
 
+## ELSE 分支挂载点（可选：预制体里加一个 ElseContainer 即可支持 IF-ELSE）。
+@export var else_container: VBoxContainer
+
+## C / E / 梳型外框（StatementFrame）。形状由语句体容器的实际布局决定，
+## 颜色由调色板注入：本文件不写颜色，也不写形状。
+@export var frame: StatementFrame
+
+@export var header_label: Label
+
+## ELSE 关键字标签（与 Header 同层显示）。
+@export var else_label: Label
+@export var add_else_button: Button
+
+## UI-only expansion state; never serialized into AST.
+var else_expanded: bool = false
+
 ## 可选：调色板。挂上后本组件会用它校验子组件的注入是否到位。
 @export var palette: BlockPalette
 
@@ -45,6 +61,8 @@ var _drag_source_active: bool = false
 
 
 func _ready() -> void:
+	if frame == null:
+		frame = get_node_or_null(^"CFrame") as StatementFrame
 	_base_variation = get_theme_type_variation()
 	_validate_mount_points()
 
@@ -56,6 +74,32 @@ func bind_statement(statement: AST_Statement) -> void:
 		condition_slot.visible = statement != null and statement.condition != null
 	if body_container != null:
 		body_container.visible = statement != null
+	if statement != null and not statement.else_body.is_empty():
+		else_expanded = true
+	_refresh_else()
+	if header_label != null:
+		header_label.text = statement_keyword(statement)
+	if frame != null:
+		frame.set_mouth_nodes(frame_mouth_nodes())
+		_apply_frame_colors()
+
+
+func expand_else() -> void:
+	else_expanded = true
+	_refresh_else()
+
+
+func _refresh_else() -> void:
+	var is_if: bool = statement_keyword(_model) == "if"
+	if else_container != null:
+		else_container.visible = is_if and else_expanded
+		(else_container.get_parent() as Control).visible = is_if and else_expanded
+	if else_label != null:
+		else_label.visible = is_if and else_expanded
+	if add_else_button != null:
+		add_else_button.visible = is_if and not else_expanded
+	if frame != null:
+		frame.set_mouth_nodes(frame_mouth_nodes())
 
 
 ## 积木 UI 协议入口：同步引擎只认这个方法，不认具体类。
@@ -69,8 +113,39 @@ func bind_model(model: AST_Node) -> void:
 
 ## 运行时替换调色板。本组件自身不画底色（VBox 没有 panel 样式），
 ## 只保存它供子积木与工厂取用。
+## 语句类型关键字：让积木自己说明它是什么。
+## [br]· loop + condition → while（每轮重新判定）
+## [br]· loop + 无 condition → repeat（无条件循环）
+## [br]· 其余带 condition → if
+func statement_keyword(statement: AST_Statement) -> String:
+	if statement == null:
+		return ""
+	if statement.loop:
+		return "while" if statement.condition != null else "repeat"
+	return "if"
+
+
+## 外框要挖成凹口的「行」：语句体容器自己（包着它的缩进容器由外框自动并上来）。
+## 返回数组 → 传几个就是几个凹口，所以梳型（多臂）在这里是免费的。
+func frame_mouth_nodes() -> Array[Node]:
+	var nodes: Array[Node] = []
+	for candidate: Node in [body_container, else_container]:
+		if candidate != null:
+			nodes.append(candidate)
+	return nodes
+
+
+## 用调色板刷外框颜色（颜色只来自 Art 的 BlockPalette，本文件不写颜色字面量）。
+func _apply_frame_colors() -> void:
+	if frame == null or palette == null:
+		return
+	var base: Color = palette.get_color_for_category(BlockPalette.CATEGORY_STATEMENT)
+	frame.set_colors(palette.get_background_color(BlockPalette.CATEGORY_STATEMENT), base.darkened(0.3))
+
+
 func set_palette(new_palette: BlockPalette) -> void:
 	palette = new_palette
+	_apply_frame_colors()
 
 
 ## 结构退化协议：条件槽被摘空时补上占位插槽。
@@ -169,31 +244,43 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 
 ## 公开的落点判断。除了引擎把事件派发到本组件，嵌套的指令块也会转发到这里
 ## （见 CommandUI.enclosing_statement()），所以它必须是公开 API 而不是内联在回调里。
+func branch_at_pointer() -> VBoxContainer:
+	if else_container != null and else_container.is_visible_in_tree() and else_container.get_global_rect().has_point(get_global_mouse_position()):
+		return else_container
+	return body_container
+
+
 func can_drop_block(data: Variant) -> bool:
-	if not BlockDragDrop.is_block_payload(data):
+	if condition_slot != null and condition_slot.get_global_rect().has_point(get_global_mouse_position()):
 		return false
-	if _insert_index_for(BlockDragDrop.payload_source(data)) < 0:
-		return false
-	_set_interaction_state(BlockDragDrop.State.HOVERED)
-	return true
+	return can_drop_in(data, branch_at_pointer())
+
+
+func can_drop_in(data: Variant, destination: VBoxContainer) -> bool:
+	var accepted: bool = BlockDragDrop.is_block_payload(data) and destination != null and (destination == body_container or destination == else_container) and destination.is_visible_in_tree() and BlockDragDrop.can_drop_into(BlockDragDrop.payload_source(data), destination)
+	_set_interaction_state(BlockDragDrop.State.HOVERED if accepted else BlockDragDrop.State.NORMAL)
+	return accepted
 
 
 ## 公开的落点执行：重排视图 + 发「模型变更意图」。
 func drop_block(data: Variant) -> void:
-	var accepted: bool = can_drop_block(data)
+	if can_drop_block(data):
+		drop_in(data, branch_at_pointer())
+
+
+func drop_in(data: Variant, destination: VBoxContainer) -> void:
+	var accepted: bool = can_drop_in(data, destination)
 	_set_interaction_state(BlockDragDrop.State.NORMAL)
 	if not accepted:
 		return
 	var source: Control = BlockDragDrop.payload_source(data)
-	var index: int = _insert_index_for(source)
-	if index < 0:
-		return
-	BlockDragDrop.end_drag(source)
+	var index: int = BlockDragDrop.compute_insert_index(destination, get_global_mouse_position().y, source)
+	BlockDragDrop.commit_drag(source)
 	var old_parent: Node = source.get_parent()
 	if old_parent != null:
 		old_parent.remove_child(source)
-	body_container.add_child(source)
-	body_container.move_child(source, index)
+	destination.add_child(source)
+	destination.move_child(source, index)
 	# 源积木原来待的地方可能被摘空了（例如它是某个表达式的必填操作数）
 	BlockDragDrop.repair_after_removal(old_parent)
 	reorder_requested.emit(BlockDragDrop.Action.INSERT_BEFORE, index, data)

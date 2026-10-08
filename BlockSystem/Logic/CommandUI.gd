@@ -20,6 +20,9 @@ extends PanelContainer
 ## 实参标签（如 3, fast, true）。
 @export var args_label: Label
 
+## 对象参数（AST 节点）的挂载点：由同步引擎把嵌套积木放进来。
+@export var args_container: HBoxContainer
+
 ## 只读数据源。
 var _model: AST_Command = null
 
@@ -39,11 +42,32 @@ func bind_model(model: AST_Node) -> void:
 	if opcode_label != null:
 		opcode_label.text = _model.opcode
 	if args_label != null:
-		args_label.text = format_args(_model.args)
+		args_label.text = format_args(literal_args(_model.args))
 	apply_palette()
 
 
 ## 运行时替换调色板后立即重新着色。
+## 只保留字面量参数（对象参数交给 args_container 里的嵌套积木显示）。
+static func literal_args(args: Array) -> Array:
+	var result: Array = []
+	for entry: Variant in args:
+		if entry is AST_Node:
+			continue
+		result.append(entry)
+	return result
+
+
+## 参数位的空缺修补（由 BlockDragDrop.repair_after_removal 向上找到后调用）：
+## 某个参数被摘走后必须留下一个空插槽，否则这一格就再也拖不进东西了。
+func repair_slot(container: Node) -> void:
+	if container == null or container != args_container:
+		return
+	for child: Node in container.get_children():
+		if BlockSyncEngine.as_block(child) != null:
+			return  # 还有积木占着就不补（多参数的指令由各自的位置自己照看）
+	SlotUI.ensure_in(container, AST_BlockSchema.ROLE_ARG)
+
+
 func set_palette(new_palette: BlockPalette) -> void:
 	palette = new_palette
 	apply_palette()
@@ -100,13 +124,13 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 		return false
 	if not BlockDragDrop.can_drop_into(BlockDragDrop.payload_source(data), self):
 		return false
-	return statement.can_drop_block(data)
+	return statement.can_drop_in(data, get_parent() as VBoxContainer)
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	var statement: StatementUI = enclosing_statement()
 	if statement != null:
-		statement.drop_block(data)
+		statement.drop_in(data, get_parent() as VBoxContainer)
 
 
 func _notification(what: int) -> void:

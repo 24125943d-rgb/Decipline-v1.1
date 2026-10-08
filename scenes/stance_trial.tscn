@@ -1,0 +1,385 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/attribute_character.tscn" id="1_character"]
+[ext_resource type="Script" uid="uid://cqpesnfprr3yq" path="res://scripts/character_vision.gd" id="2_vision"]
+[ext_resource type="Script" uid="uid://ddcl64h7chton" path="res://scripts/vision_area_renderer.gd" id="3_vision_area"]
+[ext_resource type="Script" uid="uid://cv6lpil7slcfj" path="res://scripts/vision_trial_selector.gd" id="4_selector"]
+[ext_resource type="Script" path="res://scripts/camera_orbit_controller.gd" id="5_camera"]
+[ext_resource type="Script" path="res://scripts/camera_ui_buttons.gd" id="6_camera_ui"]
+
+[ext_resource type="Script" path="res://scripts/character_attack.gd" id="7_attack"]
+[ext_resource type="Script" path="res://scripts/attack_area_renderer.gd" id="8_attack_area"]
+
+[ext_resource type="Script" path="res://scripts/stance_trial_bootstrap.gd" id="9_bootstrap"]
+[ext_resource type="Script" path="res://scripts/character_movement.gd" id="10_movement"]
+[ext_resource type="PackedScene" path="res://scenes/block_lab.tscn" id="11_lab"]
+
+[sub_resource type="Environment" id="Environment_trial"]
+background_mode = 1
+background_color = Color(0.13, 0.15, 0.19, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.75, 0.8, 0.9, 1)
+ambient_light_energy = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(30, 0.4, 30)
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.28, 0.3, 0.34, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = Vector3(30, 0.4, 30)
+
+[sub_resource type="BoxMesh" id="BoxMesh_obstacle"]
+size = Vector3(6, 3, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="Material_obstacle"]
+albedo_color = Color(0.45, 0.45, 0.5, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_obstacle"]
+size = Vector3(6, 3, 0.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+size = Vector3(4, 0.6, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Material_crate"]
+albedo_color = Color(0.5, 0.33, 0.18, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_crate"]
+size = Vector3(4, 0.6, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pillar"]
+size = Vector3(0.6, 3, 0.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape_pillar"]
+size = Vector3(0.6, 3, 0.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_backwall"]
+size = Vector3(7, 3, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape_backwall"]
+size = Vector3(7, 3, 0.4)
+
+[node name="VisionTrial" type="Node3D" unique_id=491954396]
+script = ExtResource("4_selector")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1015155566]
+environment = SubResource("Environment_trial")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=534359582]
+transform = Transform3D(1, 0, 0, 0, 0.866019, 0.500011, 0, -0.500011, 0.866019, 0, 6, 4)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1962593151]
+transform = Transform3D(0.29823506, -0.58301324, 0.7557455, 0, 0.7917774, 0.61080974, -0.95449245, -0.1821649, 0.2361358, 23.26268, 17.532846, 7.457945)
+fov = 50.0
+script = ExtResource("5_camera")
+
+[node name="Floor" type="StaticBody3D" parent="." unique_id=843394857]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Floor" unique_id=281824816]
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="Shape" type="CollisionShape3D" parent="Floor" unique_id=685608442]
+shape = SubResource("BoxShape_floor")
+
+[node name="Obstacle" type="StaticBody3D" parent="." unique_id=115361643]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1.5, -3)
+collision_layer = 9
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Obstacle" unique_id=2011422695]
+mesh = SubResource("BoxMesh_obstacle")
+surface_material_override/0 = SubResource("Material_obstacle")
+
+[node name="Shape" type="CollisionShape3D" parent="Obstacle" unique_id=1892301189]
+shape = SubResource("BoxShape_obstacle")
+
+[node name="CharacterA" parent="." unique_id=1132112274 instance=ExtResource("1_character")]
+stance = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+strength = 0
+dexterity = 0
+constitution = 0
+intelligence = 0
+wisdom = 0
+charisma = 0
+
+[node name="Vision" type="Node3D" parent="CharacterA" unique_id=2019068644]
+script = ExtResource("2_vision")
+fov_degrees = 100.0
+view_radius = 25.0
+
+[node name="VisionArea" type="Node3D" parent="CharacterA" unique_id=327274735]
+script = ExtResource("3_vision_area")
+ray_count = 72
+
+[node name="CharacterB" parent="." unique_id=320711323 instance=ExtResource("1_character")]
+stance = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.9, -6)
+strength = 0
+dexterity = 0
+constitution = 0
+intelligence = 0
+wisdom = 0
+charisma = 0
+
+[node name="Vision" type="Node3D" parent="CharacterB" unique_id=917730568]
+script = ExtResource("2_vision")
+fov_degrees = 140.0
+view_radius = 35.0
+
+[node name="VisionArea" type="Node3D" parent="CharacterB" unique_id=1558442087]
+script = ExtResource("3_vision_area")
+enabled = false
+ray_count = 72
+
+[node name="CharacterC" parent="." unique_id=2014038985 instance=ExtResource("1_character")]
+stance = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.9, -6)
+strength = 0
+dexterity = 0
+constitution = 0
+intelligence = 0
+wisdom = 0
+charisma = 0
+
+[node name="Vision" type="Node3D" parent="CharacterC" unique_id=613206115]
+script = ExtResource("2_vision")
+fov_degrees = 120.0
+view_radius = 30.0
+
+[node name="VisionArea" type="Node3D" parent="CharacterC" unique_id=828912758]
+script = ExtResource("3_vision_area")
+enabled = false
+ray_count = 72
+
+[node name="CharacterD" parent="." unique_id=1575649872 instance=ExtResource("1_character")]
+stance = -1
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 12, 0.9, 2)
+strength = 0
+dexterity = 0
+constitution = 0
+intelligence = 0
+wisdom = 0
+charisma = 0
+
+[node name="Vision" type="Node3D" parent="CharacterD" unique_id=708387293]
+script = ExtResource("2_vision")
+view_radius = 35.0
+
+[node name="VisionArea" type="Node3D" parent="CharacterD" unique_id=919814423]
+script = ExtResource("3_vision_area")
+enabled = false
+ray_count = 72
+
+[node name="CharacterE" parent="." unique_id=30519608 instance=ExtResource("1_character")]
+stance = -1
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -11, 0.9, -3)
+strength = 0
+dexterity = 0
+constitution = 0
+intelligence = 0
+wisdom = 0
+charisma = 0
+
+[node name="Vision" type="Node3D" parent="CharacterE" unique_id=1042393958]
+script = ExtResource("2_vision")
+fov_degrees = 120.0
+view_radius = 30.0
+
+[node name="VisionArea" type="Node3D" parent="CharacterE" unique_id=1374145528]
+script = ExtResource("3_vision_area")
+enabled = false
+ray_count = 72
+
+[node name="CharacterF" parent="." unique_id=355607133 instance=ExtResource("1_character")]
+stance = -1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.9, 6)
+strength = 0
+dexterity = 0
+constitution = 0
+intelligence = 0
+wisdom = 0
+charisma = 0
+
+[node name="Vision" type="Node3D" parent="CharacterF" unique_id=973640924]
+script = ExtResource("2_vision")
+view_radius = 30.0
+
+[node name="VisionArea" type="Node3D" parent="CharacterF" unique_id=1316018026]
+script = ExtResource("3_vision_area")
+enabled = false
+ray_count = 72
+
+[node name="CharacterG" parent="." unique_id=363621012 instance=ExtResource("1_character")]
+stance = -1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.9, -11)
+strength = 0
+dexterity = 0
+constitution = 0
+intelligence = 0
+wisdom = 0
+charisma = 0
+
+[node name="Vision" type="Node3D" parent="CharacterG" unique_id=943759350]
+script = ExtResource("2_vision")
+fov_degrees = 360.0
+view_radius = 25.0
+
+[node name="VisionArea" type="Node3D" parent="CharacterG" unique_id=850234988]
+script = ExtResource("3_vision_area")
+enabled = false
+ray_count = 72
+
+[node name="Crate" type="StaticBody3D" parent="." unique_id=93350642]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.3, -2.5)
+collision_layer = 9
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Crate" unique_id=1010857416]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("Material_crate")
+
+[node name="Shape" type="CollisionShape3D" parent="Crate" unique_id=1475288636]
+shape = SubResource("BoxShape_crate")
+
+[node name="Pillar" type="StaticBody3D" parent="." unique_id=730074971]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.5, -9)
+collision_layer = 9
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Pillar" unique_id=964008383]
+mesh = SubResource("BoxMesh_pillar")
+surface_material_override/0 = SubResource("Material_obstacle")
+
+[node name="Shape" type="CollisionShape3D" parent="Pillar" unique_id=567584744]
+shape = SubResource("BoxShape_pillar")
+
+[node name="BackWall" type="StaticBody3D" parent="." unique_id=810113634]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.5, -13)
+collision_layer = 9
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="BackWall" unique_id=47174397]
+mesh = SubResource("BoxMesh_backwall")
+surface_material_override/0 = SubResource("Material_obstacle")
+
+[node name="Shape" type="CollisionShape3D" parent="BackWall" unique_id=494893]
+shape = SubResource("BoxShape_backwall")
+
+[node name="Attack" type="Node3D" parent="CharacterA"]
+script = ExtResource("7_attack")
+range_shape = 1
+attack_range = 4.0
+fov_degrees = 95.0
+
+[node name="AttackArea" type="Node3D" parent="CharacterA"]
+script = ExtResource("8_attack_area")
+
+[node name="Attack" type="Node3D" parent="CharacterB"]
+script = ExtResource("7_attack")
+range_shape = 2
+box_size = Vector2(3, 5)
+offset = Vector3(0, 0, -2)
+
+[node name="AttackArea" type="Node3D" parent="CharacterB"]
+script = ExtResource("8_attack_area")
+enabled = false
+
+[node name="Attack" type="Node3D" parent="CharacterC"]
+script = ExtResource("7_attack")
+attack_range = 3.0
+
+[node name="AttackArea" type="Node3D" parent="CharacterC"]
+script = ExtResource("8_attack_area")
+enabled = false
+
+[node name="Movement" type="Node3D" parent="CharacterA"]
+script = ExtResource("10_movement")
+
+[node name="Movement" type="Node3D" parent="CharacterB"]
+script = ExtResource("10_movement")
+
+[node name="Movement" type="Node3D" parent="CharacterC"]
+script = ExtResource("10_movement")
+
+[node name="Movement" type="Node3D" parent="CharacterD"]
+script = ExtResource("10_movement")
+
+[node name="Movement" type="Node3D" parent="CharacterE"]
+script = ExtResource("10_movement")
+
+[node name="Movement" type="Node3D" parent="CharacterF"]
+script = ExtResource("10_movement")
+
+[node name="Movement" type="Node3D" parent="CharacterG"]
+script = ExtResource("10_movement")
+
+[node name="Attack" type="Node3D" parent="CharacterD"]
+script = ExtResource("7_attack")
+attack_range = 3.0
+
+[node name="Attack" type="Node3D" parent="CharacterE"]
+script = ExtResource("7_attack")
+attack_range = 3.0
+
+[node name="Attack" type="Node3D" parent="CharacterF"]
+script = ExtResource("7_attack")
+attack_range = 3.0
+
+[node name="Attack" type="Node3D" parent="CharacterG"]
+script = ExtResource("7_attack")
+attack_range = 3.0
+
+[node name="BlockLab" parent="." instance=ExtResource("11_lab")]
+visible = false
+build_on_ready = false
+
+[node name="ContactBlockLab" parent="." instance=ExtResource("11_lab")]
+visible = false
+build_on_ready = false
+
+[node name="AIBootstrap" type="Node" parent="."]
+script = ExtResource("9_bootstrap")
+
+[node name="CameraUI" type="CanvasLayer" parent="."]
+script = ExtResource("6_camera_ui")
+
+[node name="RotateLeft" type="Button" parent="CameraUI"]
+modulate = Color(1, 1, 1, 0.92)
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -78.0
+offset_right = 218.0
+offset_bottom = -22.0
+focus_mode = 0
+text = "◀ Rotate Left (Q)"
+
+[node name="RotateRight" type="Button" parent="CameraUI"]
+modulate = Color(1, 1, 1, 0.92)
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -218.0
+offset_top = -78.0
+offset_right = -24.0
+offset_bottom = -22.0
+focus_mode = 0
+text = "Rotate Right (E) ▶"
+
+[node name="Restore" type="Button" parent="CameraUI"]
+modulate = Color(1, 1, 1, 0.92)
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -218.0
+offset_top = 22.0
+offset_right = -24.0
+offset_bottom = 78.0
+focus_mode = 0
+text = "Restore View (R)"
+

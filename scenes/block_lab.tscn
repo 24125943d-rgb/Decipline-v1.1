@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://bj8k8pmp41cw4"]
+
+[ext_resource type="Script" uid="uid://bh5yp1iddrujp" path="res://scripts/block_lab.gd" id="1_lab"]
+
+[node name="BlockLab" type="Control" unique_id=1997924619]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lab")
+
+[node name="Background" type="ColorRect" parent="." unique_id=590544057]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_right = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.1, 0.13, 1)
+
+[node name="Layout" type="MarginContainer" parent="." unique_id=48818407]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 18
+
+[node name="Column" type="VBoxContainer" parent="Layout" unique_id=642122721]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Layout/Column" unique_id=343068432]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Combat AI - code blocks (AST -> UI)"
+
+[node name="Status" type="Label" parent="Layout/Column" unique_id=274831235]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.84, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "building..."
+
+[node name="Scroll" type="ScrollContainer" parent="Layout/Column" unique_id=1105638572]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Layout/Column/Scroll" unique_id=2108464054]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6

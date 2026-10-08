@@ -7,6 +7,9 @@
 [ext_resource type="Script" path="res://scripts/camera_orbit_controller.gd" id="5_camera"]
 [ext_resource type="Script" path="res://scripts/camera_ui_buttons.gd" id="6_camera_ui"]
 
+[ext_resource type="Script" path="res://scripts/character_attack.gd" id="7_attack"]
+[ext_resource type="Script" path="res://scripts/attack_area_renderer.gd" id="8_attack_area"]
+
 [sub_resource type="Environment" id="Environment_trial"]
 background_mode = 1
 background_color = Color(0.13, 0.15, 0.19, 1)
@@ -102,7 +105,7 @@ charisma = 0
 [node name="Vision" type="Node3D" parent="CharacterA" unique_id=2019068644]
 script = ExtResource("2_vision")
 fov_degrees = 100.0
-view_radius = 10.0
+view_radius = 25.0
 
 [node name="VisionArea" type="Node3D" parent="CharacterA" unique_id=327274735]
 script = ExtResource("3_vision_area")
@@ -120,7 +123,7 @@ charisma = 0
 [node name="Vision" type="Node3D" parent="CharacterB" unique_id=917730568]
 script = ExtResource("2_vision")
 fov_degrees = 140.0
-view_radius = 14.0
+view_radius = 35.0
 
 [node name="VisionArea" type="Node3D" parent="CharacterB" unique_id=1558442087]
 script = ExtResource("3_vision_area")
@@ -139,6 +142,7 @@ charisma = 0
 [node name="Vision" type="Node3D" parent="CharacterC" unique_id=613206115]
 script = ExtResource("2_vision")
 fov_degrees = 120.0
+view_radius = 30.0
 
 [node name="VisionArea" type="Node3D" parent="CharacterC" unique_id=828912758]
 script = ExtResource("3_vision_area")
@@ -156,7 +160,7 @@ charisma = 0
 
 [node name="Vision" type="Node3D" parent="CharacterD" unique_id=708387293]
 script = ExtResource("2_vision")
-view_radius = 14.0
+view_radius = 35.0
 
 [node name="VisionArea" type="Node3D" parent="CharacterD" unique_id=919814423]
 script = ExtResource("3_vision_area")
@@ -175,6 +179,7 @@ charisma = 0
 [node name="Vision" type="Node3D" parent="CharacterE" unique_id=1042393958]
 script = ExtResource("2_vision")
 fov_degrees = 120.0
+view_radius = 30.0
 
 [node name="VisionArea" type="Node3D" parent="CharacterE" unique_id=1374145528]
 script = ExtResource("3_vision_area")
@@ -192,6 +197,7 @@ charisma = 0
 
 [node name="Vision" type="Node3D" parent="CharacterF" unique_id=973640924]
 script = ExtResource("2_vision")
+view_radius = 30.0
 
 [node name="VisionArea" type="Node3D" parent="CharacterF" unique_id=1316018026]
 script = ExtResource("3_vision_area")
@@ -210,7 +216,7 @@ charisma = 0
 [node name="Vision" type="Node3D" parent="CharacterG" unique_id=943759350]
 script = ExtResource("2_vision")
 fov_degrees = 360.0
-view_radius = 10.0
+view_radius = 25.0
 
 [node name="VisionArea" type="Node3D" parent="CharacterG" unique_id=850234988]
 script = ExtResource("3_vision_area")
@@ -253,6 +259,33 @@ surface_material_override/0 = SubResource("Material_obstacle")
 [node name="Shape" type="CollisionShape3D" parent="BackWall" unique_id=494893]
 shape = SubResource("BoxShape_backwall")
 
+[node name="Attack" type="Node3D" parent="CharacterA"]
+script = ExtResource("7_attack")
+range_shape = 1
+attack_range = 4.0
+fov_degrees = 95.0
+
+[node name="AttackArea" type="Node3D" parent="CharacterA"]
+script = ExtResource("8_attack_area")
+
+[node name="Attack" type="Node3D" parent="CharacterB"]
+script = ExtResource("7_attack")
+range_shape = 2
+box_size = Vector2(3, 5)
+offset = Vector3(0, 0, -2)
+
+[node name="AttackArea" type="Node3D" parent="CharacterB"]
+script = ExtResource("8_attack_area")
+enabled = false
+
+[node name="Attack" type="Node3D" parent="CharacterC"]
+script = ExtResource("7_attack")
+attack_range = 3.0
+
+[node name="AttackArea" type="Node3D" parent="CharacterC"]
+script = ExtResource("8_attack_area")
+enabled = false
+
 [node name="CameraUI" type="CanvasLayer" parent="."]
 script = ExtResource("6_camera_ui")
 
@@ -265,7 +298,7 @@ offset_top = -78.0
 offset_right = 218.0
 offset_bottom = -22.0
 focus_mode = 0
-text = "◀ 视角左旋 (Q)"
+text = "◀ Rotate Left (Q)"
 
 [node name="RotateRight" type="Button" parent="CameraUI"]
 modulate = Color(1, 1, 1, 0.92)
@@ -278,7 +311,7 @@ offset_top = -78.0
 offset_right = -24.0
 offset_bottom = -22.0
 focus_mode = 0
-text = "视角右旋 (E) ▶"
+text = "Rotate Right (E) ▶"
 
 [node name="Restore" type="Button" parent="CameraUI"]
 modulate = Color(1, 1, 1, 0.92)
@@ -289,4 +322,4 @@ offset_top = 22.0
 offset_right = -24.0
 offset_bottom = 78.0
 focus_mode = 0
-text = "视野复原 (R)"
+text = "Restore View (R)"

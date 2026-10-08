@@ -23,6 +23,8 @@ const KIND_EXPRESSION: StringName = &"expression"
 ## 子节点角色名：直接取自 AST 的字段名，不是 UI 插槽名。
 const ROLE_CONDITION: StringName = &"condition"
 const ROLE_BODY: StringName = &"body"
+const ROLE_ELSE: StringName = &"else_body"
+const ROLE_ARG: StringName = &"args"
 const ROLE_LEFT: StringName = &"left"
 const ROLE_RIGHT: StringName = &"right"
 
@@ -35,7 +37,7 @@ const CATEGORY_STATEMENT: StringName = &"statement"
 
 ## 运算符分组表（数据表，不是分支逻辑）。
 const MATH_OPERATORS: PackedStringArray = ["+", "-", "*", "/", "%"]
-const LOGIC_OPERATORS: PackedStringArray = [">", "<", ">=", "<=", "==", "!=", "and", "or", "not"]
+const LOGIC_OPERATORS: PackedStringArray = [">", "<", ">=", "<=", "==", "!=", "and", "or", "not", "in", "attach"]
 
 
 ## 节点种类。未知类型返回空串。
@@ -60,6 +62,14 @@ static func child_roles(model: AST_Node) -> Array[Dictionary]:
 		for child: AST_Node in statement.body:
 			if child != null:
 				entries.append({"role": ROLE_BODY, "model": child})
+		for child: AST_Node in statement.else_body:
+			if child != null:
+				entries.append({"role": ROLE_ELSE, "model": child})
+	elif model is AST_Command:
+		# 对象参数（例如「攻击哪个角色」）也是子节点，按顺序暴露，视图把它们放进参数槽
+		for entry: Variant in (model as AST_Command).args:
+			if entry is AST_Node:
+				entries.append({"role": ROLE_ARG, "model": entry})
 	elif model is AST_Expression:
 		var expression: AST_Expression = model
 		if expression.left != null:

@@ -59,7 +59,7 @@ func get_camera() -> Camera3D:
 func apply_camera_initial_transform() -> void:
 	var camera: Camera3D = get_camera()
 	if camera == null:
-		push_warning("VisionTrial: 找不到相机（%s），初始机位没有应用。" % camera_path)
+		push_warning("VisionTrial: camera not found (%s); the initial camera transform was not applied." % camera_path)
 		return
 	camera.global_transform = camera_initial_transform
 	if camera.has_method(&"capture_initial_state"):
@@ -149,7 +149,7 @@ func refresh_visions() -> void:
 
 ## 一行摘要，方便日志 / 调试。
 func describe() -> String:
-	return "角色 %d 个（%d 个带视野）／障碍物 %d 个／相机初始机位 %s" % [
+	return "characters: %d (%d with vision) / obstacles: %d / camera start: %s" % [
 		characters.size(),
 		get_characters_with_vision().size(),
 		obstacles.size(),

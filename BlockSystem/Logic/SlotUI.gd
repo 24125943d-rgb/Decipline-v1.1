@@ -16,6 +16,7 @@ extends PanelContainer
 ## Art/Themes 里定义，脚本不写任何颜色与尺寸。
 
 const TEMPLATE: String = "res://BlockSystem/Prefabs/SlotUI.tscn"
+const UIType: GDScript = preload("res://BlockSystem/Logic/BlockUIType.gd")
 
 ## 本槽位承担的角色（Core/AST_BlockSchema 的 ROLE_*）。
 @export var role: StringName = AST_BlockSchema.ROLE_LEFT
@@ -42,6 +43,7 @@ const TEMPLATE: String = "res://BlockSystem/Prefabs/SlotUI.tscn"
 
 ## 当前是否处于「拒绝」反馈。
 var _rejected: bool = false
+var _accepted: bool = false
 
 
 func _ready() -> void:
@@ -56,7 +58,7 @@ func _ready() -> void:
 func get_slot_block() -> Control:
 	for child: Node in get_children():
 		var block: Control = BlockSyncEngine.as_block(child)
-		if block != null:
+		if block != null and not BlockDragDrop.is_drag_source(block):
 			return block
 	return null
 
@@ -73,7 +75,7 @@ func _refresh_look() -> void:
 	var look: StringName = empty_variation
 	if _rejected:
 		look = rejected_variation
-	elif not is_empty():
+	elif _accepted or not is_empty():
 		look = filled_variation
 	set_theme_type_variation(look)
 	if hint_label != null:
@@ -96,10 +98,10 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	if model == null or source == null:
 		return _set_rejected(false)
 	if not BlockDragDrop.can_drop_into(source, self):
-		return _set_rejected(false)
+		return _set_rejected(true)  # 拒收也要看得见（否则会以为高亮坏了）
 	# 槽里已经有积木时，落点应该由那个积木接管（3 分区 / 垂直吸附），本槽位让位。
 	if not is_empty():
-		return _set_rejected(false)
+		return _set_rejected(true)  # 满槽：红一下，明确告诉玩家这里放不下第二个
 
 	var reason: String = rejection_reason(model)
 	if not reason.is_empty():
@@ -124,6 +126,7 @@ func rejection_reason(model: AST_Node) -> String:
 
 func _set_rejected(rejected: bool, accepted: bool = false) -> bool:
 	_rejected = rejected
+	_accepted = accepted
 	_refresh_look()
 	return accepted
 
@@ -135,7 +138,7 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if not accepted:
 		return
 	var source: Control = BlockDragDrop.payload_source(data)
-	BlockDragDrop.end_drag(source)
+	BlockDragDrop.commit_drag(source)
 	var container: Node = get_parent()
 	if container == null:
 		return
@@ -147,6 +150,7 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 		var index: int = get_index()
 		container.add_child(source)
 		container.move_child(source, index)
+		container.remove_child(self)
 		queue_free()
 	else:
 		# 常驻插槽：积木成为本槽自己的子节点（槽留在原地承接，不能被顶替或销毁）
@@ -156,7 +160,8 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_DRAG_END and _rejected:
+	if what == NOTIFICATION_DRAG_END:
+		_accepted = false
 		_rejected = false
 		_refresh_look()
 
@@ -164,13 +169,13 @@ func _notification(what: int) -> void:
 # ------------------------------------------------------------------ 工厂
 
 ## 实例化一个占位插槽（供属主积木在「必填槽位被摘空」时调用）。
-static func create(p_role: StringName) -> SlotUI:
+static func create(p_role: StringName) -> Control:
 	var scene: PackedScene = load(TEMPLATE) as PackedScene
 	if scene == null:
 		push_error("SlotUI: 占位模板加载失败 %s" % TEMPLATE)
 		return null
-	var slot: SlotUI = scene.instantiate() as SlotUI
-	if slot == null:
+	var slot: Control = scene.instantiate() as Control
+	if not UIType.matches(slot, UIType.SLOT):
 		push_error("SlotUI: 模板 %s 的根节点不是 SlotUI。" % TEMPLATE)
 		return null
 	slot.role = p_role
@@ -182,15 +187,15 @@ static func create(p_role: StringName) -> SlotUI:
 
 
 ## 保证容器里有一个占位；已有积木或已有占位就不动。返回该占位。
-static func ensure_in(container: Node, p_role: StringName) -> SlotUI:
+static func ensure_in(container: Node, p_role: StringName) -> Control:
 	if container == null:
 		return null
 	for child: Node in container.get_children():
-		if child is SlotUI:
-			return child
+		if UIType.matches(child, UIType.SLOT):
+			return child as Control
 		if BlockSyncEngine.as_block(child) != null:
 			return null  # 槽里已经有积木，不需要占位
-	var slot: SlotUI = create(p_role)
+	var slot: Control = create(p_role)
 	if slot != null:
 		container.add_child(slot)
 	return slot
@@ -202,6 +207,6 @@ static func clear_from(container: Node) -> void:
 	if container == null:
 		return
 	for child: Node in container.get_children():
-		if child is SlotUI and (child as SlotUI).transient_placeholder:
+		if UIType.matches(child, UIType.SLOT) and bool(child.get(&"transient_placeholder")):
 			container.remove_child(child)
 			child.queue_free()

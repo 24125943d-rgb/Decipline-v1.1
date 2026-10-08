@@ -17,11 +17,22 @@ const TYPE_NODE: String = "node"
 ## 节点种类标识，参与序列化。由具体子类在 _init() 中写入。
 var type: String = TYPE_NODE
 
+## 节点唯一标识（可选，例如 "uuid_while_1"）。留空则用结构路径当 id。
+var uuid: String = ""
+
 
 ## 导出为可被 JSON.stringify 处理的普通 Dictionary。
 ## 子类覆写本方法时必须保留 "type" 字段。
 func to_dictionary() -> Dictionary:
-	return {"type": type}
+	return _payload()
+
+
+## 公共字段（type + 可选 uuid）。子类序列化都从它开始。
+func _payload() -> Dictionary:
+	var payload: Dictionary = {"type": type}
+	if not uuid.is_empty():
+		payload["uuid"] = uuid
+	return payload
 
 
 ## 供 Godot 调试器与 print() 使用的简短描述。

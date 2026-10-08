@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" uid="uid://c433tm7plbjy7" path="res://小鼠3d模型.glb" id="1_mouse"]
+
+[node name="MouseAppearance" type="Node3D"]
+
+[node name="Mouse" parent="." instance=ExtResource("1_mouse")]
+transform = Transform3D(0, 0, 1.0207, 0, 1.0207, 0, -1.0207, 0, 0, 0, -0.9, 0)

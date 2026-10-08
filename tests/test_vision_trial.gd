@@ -95,12 +95,13 @@ func test_observers_and_map() -> Variant:
 	_check(observer_names.has("CharacterA"), "A 看得见 C")
 	_check(observer_names.has("CharacterE"), "E 看得见 C")
 	_check(observer_names.has("CharacterG"), "G 看得见 C")
+	_check(observer_names.has("CharacterF"), "F 的视野半径扩大到 30 后看得见 C")
 	_check(not observer_names.has("CharacterC"), "C 自己不在名单里")
-	_check_eq(observers.size(), 3, "恰好 3 个观察者")
+	_check_eq(observers.size(), 4, "恰好 4 个观察者（A、E、F、G）")
 
 	var map: Dictionary = trial.get_visibility_map()
 	_check_eq(map.size(), 7, "可见性地图覆盖 7 个角色")
-	_check_eq(_names(map[_character(trial, "CharacterA")]), PackedStringArray(["CharacterC"]), "A 只看得见 C")
+	_check_eq(_names(map[_character(trial, "CharacterA")]), PackedStringArray(["CharacterC", "CharacterG"]), "A 的视野半径扩大到 25 后恰好看得见 C、G")
 
 	var bare: Character = BareCharacterScene.instantiate() as Character
 	trial.add_child(bare)

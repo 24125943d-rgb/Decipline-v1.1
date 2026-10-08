@@ -49,6 +49,36 @@ const LAYER_OBSTACLE: int = 1 << 3 ## 会挡住视野的不透明障碍物（墙
 
 # ------------------------------------------------------------------ 导出属性
 @export_group("属性 / Stats")
+## Base stance, not a trait or attribute modifier. Integer assignments saturate
+## via clampi(value, -1, 1): below -1 -> -1, above 1 -> 1.
+## For distinct valid characters, stance product -1 = enemy, 1 = friendly,
+## 0 = neutral. Default zero stance never creates hostility.
+@export_enum("Opposed:-1", "Unaligned:0", "Aligned:1") var stance: int = 0:
+	set(value):
+		stance = clampi(value, -1, 1)
+
+## Symmetric live relations, independent of health, geometry and vision.
+## All three queries return false for self or null: relations only describe
+## distinct valid characters. Callers with potentially freed references must
+## check is_instance_valid first (Godot's typed argument boundary may reject them).
+func is_enemy(other: Character) -> bool:
+	if not is_instance_valid(other) or other == self:
+		return false
+	return stance * other.stance == -1
+
+## Same nonzero stance is friendly; self and null are excluded.
+func is_friendly(other: Character) -> bool:
+	if not is_instance_valid(other) or other == self:
+		return false
+	return stance * other.stance == 1
+
+## Either distinct character having zero stance makes the pair neutral.
+## Self and null are excluded, rather than being classified as neutral.
+func is_neutral(other: Character) -> bool:
+	if not is_instance_valid(other) or other == self:
+		return false
+	return stance * other.stance == 0
+
 ## HP 上限。
 @export var max_hp: int = 100:
 	set(value):
@@ -377,13 +407,16 @@ func _apply_body_height() -> void:
 
 func _setup_appearance() -> void:
 	if model_root == null:
-		push_warning("Character: 场景里缺少 Appearance/ModelRoot 节点，无法挂载外观模型。")
+		push_warning("Character: no Appearance/ModelRoot node in the scene; the appearance model cannot be attached.")
 		return
 
 	# 清掉上一次挂进去的模型（占位球体保留，只是隐藏）
 	for child: Node in model_root.get_children():
 		if child == _placeholder:
 			continue
+		# queue_free() 要到帧末才真正移除，在此之前它仍会被 _visual_aabb 算进包围盒，
+		# 于是换装后紧接着的 recenter_hurtbox() 会量到"新旧模型的并集"。先摘出场景树即可。
+		model_root.remove_child(child)
 		child.queue_free()
 	model_instance = null
 
@@ -393,7 +426,7 @@ func _setup_appearance() -> void:
 			model_instance = instance as Node3D
 			model_root.add_child(model_instance)
 		else:
-			push_warning("Character: appearance_model 的根节点不是 Node3D，已忽略。")
+			push_warning("Character: appearance_model's root node is not a Node3D; ignored.")
 			instance.free()
 
 	if _placeholder != null:
@@ -403,7 +436,7 @@ func _setup_appearance() -> void:
 func _setup_hurtbox() -> void:
 	hurtbox = get_node_or_null(hurtbox_path) as Area3D
 	if hurtbox == null:
-		push_warning("Character: 找不到受击判定节点 '%s'。" % hurtbox_path)
+		push_warning("Character: hurtbox node '%s' not found." % hurtbox_path)
 		return
 
 	hurtbox_shape = null

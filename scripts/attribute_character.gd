@@ -390,7 +390,7 @@ func _warn_if_never_expires(modifier: AttributeModifier) -> void:
 		return
 	push_warning(
 		(
-			"AttributeCharacter: 临时改动 '%s' 既没有倒计时也没有状态消除判定脚本，它不会自己消失。"
+			"AttributeCharacter: temporary modifier '%s' has neither a timer nor an expiry rule; it will not expire on its own."
 			% modifier.describe()
 		)
 	)

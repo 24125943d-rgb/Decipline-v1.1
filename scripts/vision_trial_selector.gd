@@ -1,3 +1,4 @@
+class_name VisionTrialSelector
 extends VisionTrial
 ## 试用场景的交互：[b]鼠标左键点击角色 → 获取并显示该角色当前的视野[/b]。
 ##
@@ -41,7 +42,7 @@ func _ready() -> void:
 	super()  # 先让 VisionTrial 收好角色 / 障碍物列表和相机初始机位
 	_camera = get_node_or_null(camera_path) as Camera3D
 	if _camera == null:
-		push_warning("VisionTrialSelector: 找不到 Camera3D，点击选取不可用。")
+		push_warning("VisionTrialSelector: no Camera3D found; click-to-select is unavailable.")
 	_collect_candidates()
 	if show_hud:
 		_build_hud()
@@ -97,6 +98,9 @@ func select_character(character: Character) -> void:
 		var area: Node = candidate.get_node_or_null(^"VisionArea")
 		if area != null:
 			area.set("enabled", candidate == character)
+		var attack_area: AttackAreaRenderer = candidate.get_node_or_null(^"AttackArea") as AttackAreaRenderer
+		if attack_area != null:
+			attack_area.enabled = candidate == character
 	_update_hud()
 	print(_describe(character))
 
@@ -136,14 +140,14 @@ func _collect_candidates() -> void:
 func _describe(character: Character) -> String:
 	var vision: CharacterVision = character.get_node_or_null(^"Vision") as CharacterVision
 	if vision == null:
-		return "%s：没有挂视野组件" % character.name
+		return "%s: no vision component attached" % character.name
 	var names: PackedStringArray = visible_names(character)
-	return "当前视野：%s（%.0f° / %.1f m）→ 看得见 %d 个角色：%s" % [
+	return "View: %s (FOV %.0f deg / radius %.1f m) -> sees %d character(s): %s" % [
 		character.name,
 		vision.fov_degrees,
 		vision.view_radius,
 		names.size(),
-		"（无）" if names.is_empty() else ", ".join(names),
+		"(none)" if names.is_empty() else ", ".join(names),
 	]
 
 
@@ -167,6 +171,10 @@ func _update_hud() -> void:
 	if _label == null:
 		return
 	if selected == null:
-		_label.text = "左键点击一个角色，查看它当前的视野"
+		_label.text = "Left-click a character to view what it can see."
 		return
-	_label.text = "%s\n左键点击其它角色可切换视野" % _describe(selected)
+	var attack: CharacterAttack = selected.get_node_or_null(^"Attack") as CharacterAttack
+	var attack_text: String = "No attack component"
+	if attack != null:
+		attack_text = "Attack: %s | %d target(s) | no occlusion" % [attack.describe_range(), attack.characters_in_range().size()]
+	_label.text = "%s\n%s\nLeft-click another character to switch (A/B/C: sector/box/circle)." % [_describe(selected), attack_text]

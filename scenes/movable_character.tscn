@@ -1,0 +1,10 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/character.tscn" id="1_character"]
+[ext_resource type="Script" path="res://scripts/movable_character.gd" id="2_movable"]
+[ext_resource type="PackedScene" path="res://scenes/character_movement.tscn" id="3_movement"]
+
+[node name="Character" instance=ExtResource("1_character")]
+script = ExtResource("2_movable")
+
+[node name="Movement" parent="." instance=ExtResource("3_movement")]

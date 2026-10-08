@@ -30,13 +30,13 @@ var _held: Array[float] = []
 func _ready() -> void:
 	_camera = get_node_or_null(camera_path) as Camera3D
 	if _camera == null:
-		push_warning("CameraUIButtons: 找不到摄影机（%s），按钮不会生效。" % camera_path)
+		push_warning("CameraUIButtons: camera not found (%s); the buttons will have no effect." % camera_path)
 
 	_left = get_node_or_null(rotate_left_path) as Button
 	_right = get_node_or_null(rotate_right_path) as Button
 	_restore = get_node_or_null(restore_path) as Button
 	if _left == null or _right == null:
-		push_warning("CameraUIButtons: 缺少旋转按钮，按钮不会生效。")
+		push_warning("CameraUIButtons: rotation buttons are missing; they will have no effect.")
 
 	if _left != null:
 		_left.button_down.connect(func() -> void: press_direction(-1.0))

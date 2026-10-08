@@ -1,5 +1,6 @@
 class_name BlockSyncEngine
 extends Node
+const UIType: GDScript = preload("res://BlockSystem/Logic/BlockUIType.gd")
 ## AST ⇄ UI 双向同步引擎（视图层）。
 ##
 ## 关于「为什么不在 Core/」：
@@ -32,6 +33,8 @@ const TEMPLATES: Dictionary = {
 const ROLE_SLOTS: Dictionary = {
 	AST_BlockSchema.ROLE_CONDITION: &"condition_slot",
 	AST_BlockSchema.ROLE_BODY: &"body_container",
+	AST_BlockSchema.ROLE_ELSE: &"else_container",
+	AST_BlockSchema.ROLE_ARG: &"args_container",
 	AST_BlockSchema.ROLE_LEFT: &"left_slot",
 	AST_BlockSchema.ROLE_RIGHT: &"right_slot",
 }
@@ -202,62 +205,84 @@ func get_last_root() -> Control:
 
 
 func _compile_node(block: Control) -> AST_Node:
-	if block is StatementUI:
-		return _compile_statement(block as StatementUI)
-	if block is ExpressionUI:
-		return _compile_expression(block as ExpressionUI)
-	if block is CommandUI:
-		return _compile_command(block as CommandUI)
+	if UIType.matches(block, UIType.STATEMENT):
+		return _compile_statement(block)
+	if UIType.matches(block, UIType.EXPRESSION):
+		return _compile_expression(block)
+	if UIType.matches(block, UIType.COMMAND):
+		return _compile_command(block)
 	push_error("BlockSyncEngine: 无法编译未知积木 %s。" % block.get_scene_file_path())
 	return null
 
 
-func _compile_statement(ui: StatementUI) -> AST_Statement:
+func _compile_statement(ui: Control) -> AST_Statement:
 	var statement: AST_Statement = AST_Statement.new()
 	# body 的顺序由容器里的实际排列决定 —— 拖拽改的正是它
-	if ui.body_container != null:
-		for child: Node in ui.body_container.get_children():
+	if (ui.get(&"body_container") as Node) != null:
+		for child: Node in (ui.get(&"body_container") as Node).get_children():
 			var child_block: Control = as_block(child)
 			if child_block == null:
 				continue
 			var compiled: AST_Node = _compile_node(child_block)
 			if compiled != null:
 				statement.body.append(compiled)
-	var condition_block: Control = _first_block_in(ui.condition_slot)
+	var original: AST_Statement = ui.call(&"get_model")
+	if original != null:
+		statement.loop = original.loop
+	if (ui.get(&"else_container") as Node) != null:
+		for child: Node in (ui.get(&"else_container") as Node).get_children():
+			var block: Control = as_block(child)
+			if block != null:
+				statement.else_body.append(_compile_node(block))
+	var condition_block: Control = _first_block_in((ui.get(&"condition_slot") as Node))
 	if condition_block != null:
 		statement.condition = _compile_node(condition_block) as AST_Expression
 	return statement
 
 
-func _compile_expression(ui: ExpressionUI) -> AST_Expression:
+func _compile_expression(ui: Control) -> AST_Expression:
 	var expression: AST_Expression = AST_Expression.new()
 	# 原子数据沿用原模型（运算符 / 字面量在界面上不可编辑）
-	var model: AST_Expression = ui.get_model()
+	var model: AST_Expression = ui.call(&"get_model")
 	if model != null:
 		expression.operator = model.operator
 		expression.value = model.value
 	# 结构取 UI 的挂载关系
-	var left_block: Control = _first_block_in(ui.left_slot)
+	var left_block: Control = _first_block_in((ui.get(&"left_slot") as Node))
 	if left_block != null:
 		expression.left = _compile_node(left_block) as AST_Expression
-	var right_block: Control = _first_block_in(ui.right_slot)
+	var right_block: Control = _first_block_in((ui.get(&"right_slot") as Node))
 	if right_block != null:
 		expression.right = _compile_node(right_block) as AST_Expression
 	return expression
 
 
-func _compile_command(ui: CommandUI) -> AST_Command:
+func _compile_command(ui: Control) -> AST_Command:
 	var command: AST_Command = AST_Command.new()
-	var model: AST_Command = ui.get_model()
+	var model: AST_Command = ui.call(&"get_model")
 	if model != null:
 		command.opcode = model.opcode
-		command.args = (model.args as Array).duplicate(true)
+		var entries: Array[Node] = []
+		if (ui.get(&"args_container") as Node) != null:
+			for child: Node in (ui.get(&"args_container") as Node).get_children():
+				if as_block(child) != null or UIType.matches(child, UIType.SLOT):
+					entries.append(child)
+		var cursor: int = 0
+		for arg: Variant in model.args:
+			if arg is AST_Node:
+				var compiled: AST_Node = null
+				if cursor < entries.size() and as_block(entries[cursor]) != null:
+					compiled = _compile_node(entries[cursor] as Control)
+				command.args.append(compiled)
+				cursor += 1
+			else:
+				command.args.append(arg)
 	return command
 
 
 ## 只把三类积木控件当成积木；标签、容器、装饰节点一概忽略。
 static func as_block(node: Node) -> Control:
-	if node is StatementUI or node is ExpressionUI or node is CommandUI:
+	if UIType.matches(node, UIType.STATEMENT) or UIType.matches(node, UIType.EXPRESSION) or UIType.matches(node, UIType.COMMAND):
 		return node as Control
 	return null
 

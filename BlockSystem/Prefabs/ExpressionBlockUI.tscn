@@ -7,6 +7,7 @@
 [node name="ExpressionBlockUI" type="PanelContainer" node_paths=PackedStringArray("operator_label", "left_slot", "right_slot", "value_label")]
 theme = ExtResource("2_theme")
 theme_type_variation = &"ExpressionBlock"
+size_flags_horizontal = 0
 script = ExtResource("1_expression")
 palette = ExtResource("3_palette")
 category = &"logic"

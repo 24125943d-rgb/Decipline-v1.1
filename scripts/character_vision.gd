@@ -86,6 +86,8 @@ var visible_characters: Array[Character] = []
 var owner_character: Character = null
 
 var _elapsed: float = 0.0
+## 扇形几何的承载者：判定逻辑与 CharacterRange 共用一套，视野只负责"要不要做遮挡"。
+var _sector_range: CharacterRange = null
 var _debug_mesh: MeshInstance3D = null
 var _last_candidates: Array[Character] = []
 var _last_hit_points: Dictionary = {}
@@ -128,18 +130,22 @@ func can_see(target: Character) -> bool:
 
 
 ## 某个世界坐标点是否落在扇形里（只看水平距离和角度，忽略高度）。
+## [br]几何判定委托给 [CharacterRange]（与攻击范围共用同一套实现）；本组件只负责把
+## 自己的参数映射过去。[b]遮挡仍然只由本组件处理[/b]——range 那层不做任何射线检测。
 func is_in_sector(point: Vector3) -> bool:
-	var delta: Vector3 = point - global_position
-	var flat: Vector3 = Vector3(delta.x, 0.0, delta.z)
-	if flat.length() > view_radius:
-		return false
-	if fov_degrees >= 359.999:
-		return true
-	if flat.length_squared() < 0.000001:
-		return true
-	return rad_to_deg(_horizontal_forward().angle_to(flat.normalized())) <= fov_degrees * 0.5
+	var geometry: CharacterRange = sector_geometry()
+	return geometry.contains_point(point, global_transform)
 
 
+## 当前扇形对应的 [CharacterRange]（按本组件的参数现配一块，缓存在组件上）。
+func sector_geometry() -> CharacterRange:
+	if _sector_range == null:
+		_sector_range = CharacterRange.new()
+	_sector_range.shape = CharacterRange.Shape.SECTOR
+	_sector_range.radius = view_radius
+	_sector_range.fov_degrees = fov_degrees
+	_sector_range.yaw_offset_degrees = yaw_offset_degrees
+	return _sector_range
 ## 扇形中心方向（世界空间，已含 [member yaw_offset_degrees]）。
 ## 想让视野跟着摄像机 / 头骨走，覆盖这个函数即可。
 func get_forward() -> Vector3:

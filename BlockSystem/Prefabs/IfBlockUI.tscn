@@ -1,21 +1,79 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://BlockSystem/Logic/StatementUI.gd" id="1_statement"]
 [ext_resource type="Theme" path="res://BlockSystem/Art/Themes/block_theme.tres" id="2_theme"]
 [ext_resource type="BlockPalette" path="res://BlockSystem/Art/Palettes/palette_default.tres" id="3_palette"]
 [ext_resource type="PackedScene" path="res://BlockSystem/Prefabs/SlotUI.tscn" id="4_slot"]
+[ext_resource type="Script" path="res://BlockSystem/Logic/StatementFrame.gd" id="5_frame"]
 
-[node name="IfBlockUI" type="VBoxContainer" node_paths=PackedStringArray("condition_slot", "body_container")]
+[ext_resource type="Script" path="res://BlockSystem/Logic/BodyDropUI.gd" id="6_body"]
+
+[node name="IfBlockUI" type="VBoxContainer" node_paths=PackedStringArray("condition_slot", "body_container", "else_container", "header_label", "else_label", "frame", "add_else_button")]
 theme = ExtResource("2_theme")
 script = ExtResource("1_statement")
+size_flags_horizontal = 0
 palette = ExtResource("3_palette")
-condition_slot = NodePath("ConditionSlot")
-body_container = NodePath("BodyContainer")
+condition_slot = NodePath("CFrame/StatementColumn/Header/ConditionSlot")
+body_container = NodePath("CFrame/StatementColumn/BodyIndent/BodyContainer")
+else_container = NodePath("CFrame/StatementColumn/ElseIndent/ElseContainer")
+header_label = NodePath("CFrame/StatementColumn/Header/Keyword")
+else_label = NodePath("CFrame/StatementColumn/ElseKeyword")
+frame = NodePath("CFrame")
+add_else_button = NodePath("CFrame/StatementColumn/AddElse")
 
-[node name="ConditionSlot" parent="." instance=ExtResource("4_slot")]
+[node name="CFrame" type="MarginContainer" parent="."]
+script = ExtResource("5_frame")
+size_flags_horizontal = 0
+size_flags_vertical = 0
+wall_thickness = 8.0
+corner_radius = 6.0
+corner_segments = 5
+content_padding = 0.0
+bottom_lip_ratio = 1.0
+outline_ratio = 0.28
+
+[node name="StatementColumn" type="VBoxContainer" parent="CFrame"]
+size_flags_horizontal = 0
+
+[node name="Header" type="HBoxContainer" parent="CFrame/StatementColumn"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Keyword" type="Label" parent="CFrame/StatementColumn/Header"]
+layout_mode = 2
+text = "if"
+
+[node name="ConditionSlot" parent="CFrame/StatementColumn/Header" instance=ExtResource("4_slot")]
 layout_mode = 2
 role = &"condition"
 boolean_required = true
 
-[node name="BodyContainer" type="VBoxContainer" parent="."]
+[node name="BodyIndent" type="MarginContainer" parent="CFrame/StatementColumn"]
 layout_mode = 2
+theme_override_constants/margin_left = 0
+
+[node name="BodyContainer" type="VBoxContainer" parent="CFrame/StatementColumn/BodyIndent"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 32)
+script = ExtResource("6_body")
+
+[node name="AddElse" type="Button" parent="CFrame/StatementColumn"]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "+ else"
+
+[node name="ElseKeyword" type="Label" parent="CFrame/StatementColumn"]
+layout_mode = 2
+text = "else"
+
+[node name="ElseIndent" type="MarginContainer" parent="CFrame/StatementColumn"]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+
+[node name="ElseContainer" type="VBoxContainer" parent="CFrame/StatementColumn/ElseIndent"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 32)
+script = ExtResource("6_body")
+
+[connection signal="pressed" from="CFrame/StatementColumn/AddElse" to="." method="expand_else"]
+

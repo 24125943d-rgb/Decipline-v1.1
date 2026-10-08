@@ -6,11 +6,12 @@
 [node name="SlotUI" type="PanelContainer" node_paths=PackedStringArray("hint_label")]
 theme = ExtResource("2_theme")
 theme_type_variation = &"SlotPlaceholder"
+size_flags_horizontal = 0
 script = ExtResource("1_slot")
 role = &"left"
 hint_label = NodePath("Hint")
 
 [node name="Hint" type="Label" parent="."]
 layout_mode = 2
-text = "拖入积木"
+text = "Drop block"
 horizontal_alignment = 1
